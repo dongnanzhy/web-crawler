@@ -1,2 +1,4 @@
 *.pyc
 .idea
+*.DS_Store
+ArticleSpider/ArticleSpider/cookies/*

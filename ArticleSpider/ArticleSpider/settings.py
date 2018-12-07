@@ -17,7 +17,7 @@ NEWSPIDER_MODULE = 'ArticleSpider.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'ArticleSpider (+http://www.yourdomain.com)'
+# USER_AGENT = 'ArticleSpider (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
 # 遵循robots协议，要设置为false
@@ -35,7 +35,8 @@ ROBOTSTXT_OBEY = False
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+# 首次加入cookie后，后面的request都会自动加上cookie
+COOKIES_ENABLED = True
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -69,17 +70,17 @@ ROBOTSTXT_OBEY = False
 # 这个就是item在pipeline中的流动（处理）顺序，数字越小代表越先进入pipeline
 ITEM_PIPELINES = {
    # 默认pipeline
-   # 'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
+   'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
    # 默认image pipeline
    # 'scrapy.pipelines.images.ImagesPipeline': 1,
    # 自定义JSON pipeline
    # 'ArticleSpider.pipelines.JsonExporterPipeline': 2,
    # 自定义image pipeline
-   'ArticleSpider.pipelines.ArticleImagePipeline': 1,
+   # 'ArticleSpider.pipelines.ArticleImagePipeline': 1,
    # 自定义mysql pipeline
    # 'ArticleSpider.pipelines.MysqlPipeline': 2,
    # 自定义 异步 mysql pipeline
-   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   # 'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
 }
 # 定义image的url路径item字段 和 下载存储地址
 IMAGES_URLS_FIELD = "front_image_url"
@@ -93,7 +94,7 @@ IMAGES_MIN_WIDTH = 100
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
-#AUTOTHROTTLE_ENABLED = True
+# AUTOTHROTTLE_ENABLED = True
 # The initial download delay
 #AUTOTHROTTLE_START_DELAY = 5
 # The maximum download delay to be set in case of high latencies

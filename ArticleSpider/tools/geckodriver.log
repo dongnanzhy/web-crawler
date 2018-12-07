@@ -1,0 +1,5 @@
+1544152207464	mozrunner::runner	INFO	Running command: "/Applications/Firefox.app/Contents/MacOS/firefox-bin" "-marionette" "-foreground" "-no-remote" "-profile" "/var/folders/r6/sjgh19d138j90xtjwv_hdm_h0000gn/T/rust_mozprofile.m2vfWMzA6xKZ"
+1544152209461	Marionette	INFO	Listening on port 49551
+1544152209516	Marionette	WARN	TLS certificate errors will be ignored for this session
+JavaScript error: chrome://browser/content/urlbarBindings.xml, line 2709: NS_ERROR_FAILURE: Component returned failure code: 0x80004005 (NS_ERROR_FAILURE) [nsIAutoCompleteController.getStyleAt]
+1544152273540	Marionette	INFO	Stopped listening on port 49551
