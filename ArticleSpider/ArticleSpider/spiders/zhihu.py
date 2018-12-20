@@ -1,19 +1,38 @@
 # -*- coding: utf-8 -*-
 __author__ = 'dongnanzhy'
 
+import os
 import scrapy
 import time
 import json
 import re
+import datetime
+import pickle
 
+try:
+    import urlparse as parse
+except:
+    from urllib import parse
+
+from scrapy.loader import ItemLoader
+from ArticleSpider.items import ZhihuQuestionItem, ZhihuAnswerItem
+
+
+# 1. spider 入口：start_requests()，完成登录
+# 2. 异步到parse(), 从start_urls开始DFS爬取
+# 3. 如果不是question类型url，继续DFS；如果是question类型url，异步到parse_question()解析
+# 4. 解析question，yield item，scrapy自动检测是item后路由到pipeline
+# 4. 解析question，通过知乎提供的json接口，yield request, 异步到parse_answer()
+# 5. 通过json格式解析answer，yield item 并且 如果没有结束，继续异步parse_answer()
 
 class ZhihuSpider(scrapy.Spider):
     name = "zhihu"
     allowed_domains = ["www.zhihu.com"]
     start_urls = ['https://www.zhihu.com/']
 
-    #question的第一页answer的请求url
-    start_answer_url = "https://www.zhihu.com/api/v4/questions/{0}/answers?sort_by=default&include=data%5B%2A%5D.is_normal%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccollapsed_counts%2Creviewing_comments_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Cmark_infos%2Ccreated_time%2Cupdated_time%2Crelationship.is_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees%3Bdata%5B%2A%5D.author.is_blocking%2Cis_blocked%2Cis_followed%2Cvoteup_count%2Cmessage_thread_token%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit={1}&offset={2}"
+    # question的第一页answer的请求url
+    # 知乎是随着滚动自动刷新，如果点开F12-Network，会发现实际上是send了如下request
+    start_answer_url = "https://www.zhihu.com/api/v4/questions/{0}/answers?include=data%5B%2A%5D.is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Crelevant_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cis_labeled%3Bdata%5B%2A%5D.mark_infos%5B%2A%5D.url%3Bdata%5B%2A%5D.author.follower_count%2Cbadge%5B%2A%5D.topics&limit={1}&offset={2}&platform=desktop&sort_by=default"
 
     agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36"
     headers = {
@@ -31,14 +50,85 @@ class ZhihuSpider(scrapy.Spider):
         提取出html页面中的所有url 并跟踪这些url进行一步爬取
         如果提取的url中格式为 /question/xxx 就下载之后直接进入解析函数
         """
-        pass
+        all_urls = response.css("a::attr(href)").extract()
+        # url 加上域名
+        all_urls = [parse.urljoin(response.url, url) for url in all_urls]
+        # 注意filter函数的使用,过滤掉非https的url
+        all_urls = filter(lambda x: True if x.startswith("https") else False, all_urls)
+        for url in all_urls:
+            # 通过regex找到question类型的url
+            match_obj = re.match("(.*zhihu.com/question/(\d+))(/|$).*", url)
+            if match_obj:
+                # 如果提取到question相关的页面则下载后交由提取函数进行提取
+                request_url = match_obj.group(1)
+                question_id = match_obj.group(2)
+
+                # 注意scrapy是用过yield传递request的
+                yield scrapy.Request(request_url, headers=self.headers,
+                                     meta={"question_id": question_id},
+                                     callback=self.parse_question)
+            else:
+                pass  # debug
+                # 如果不是question页面则直接进行下一步跟踪
+                # yield scrapy.Request(url, headers=self.headers,
+                #                      callback=self.parse)
 
     def parse_question(self, response):
-        #处理question页面， 从页面中提取出具体的question item
-       pass
+        # 处理question页面， 从页面中提取出具体的question item
+        # 注意：这里也可以继续抓取url进行下一步跟踪，参考self.parse()，此处省略
+        question_id = int(response.meta.get("question_id", ""))
+        if "QuestionHeader-title" in response.text:
+            # 处理新版本
+            item_loader = ItemLoader(item=ZhihuQuestionItem(), response=response)
+            item_loader.add_css("title", "h1.QuestionHeader-title::text")
+            # 取html，不取text
+            item_loader.add_css("content", ".QuestionHeader-detail")
+            item_loader.add_value("url", response.url)
+            item_loader.add_value("zhihu_id", question_id)
+            # 回答数，提取text
+            item_loader.add_css("answer_num", ".List-headerText span::text")
+            # 评论数，提取text，略微改动
+            item_loader.add_css("comments_num", ".QuestionHeader-Comment button::text")
+            # 关注数和浏览数一起提取，略微改动
+            item_loader.add_css("watch_user_num", ".NumberBoard-itemValue::text")
+            # 主题。 css格式里空格代表后代（子代用">"）小心Popover后面还有个后代div
+            item_loader.add_css("topics", ".QuestionHeader-topics .Popover div::text")
+
+            question_item = item_loader.load_item()
+        else:
+            # 处理旧版本，略
+            raise NotImplementedError
+        yield scrapy.Request(self.start_answer_url.format(question_id, 20, 0), headers=self.headers,
+                             callback=self.parse_answer)
+        yield question_item
 
     def parse_answer(self, response):
-        pass
+        # 处理question的answer
+        ans_json = json.loads(response.text)
+        is_end = ans_json["paging"]["is_end"]
+        # totals_answer = ans_json["paging"]["totals"]
+        next_url = ans_json["paging"]["next"]
+
+        #提取answer的具体字段
+        for answer in ans_json["data"]:
+            answer_item = ZhihuAnswerItem()
+            answer_item["zhihu_id"] = answer["id"]
+            answer_item["url"] = answer["url"]
+            answer_item["question_id"] = answer["question"]["id"]
+            # 由于匿名评论，可能不存在用户id
+            answer_item["author_id"] = answer["author"]["id"] if "id" in answer["author"] else None
+            answer_item["content"] = answer["content"] if "content" in answer else None
+            answer_item["praise_num"] = answer["voteup_count"]
+            answer_item["comments_num"] = answer["comment_count"]
+            answer_item["create_time"] = answer["created_time"]
+            answer_item["update_time"] = answer["updated_time"]
+            answer_item["crawl_time"] = datetime.datetime.now()
+
+            yield answer_item
+
+        if not is_end:
+            # 没有结束，继续通过next_url拿后面的answer
+            yield scrapy.Request(next_url, headers=self.headers, callback=self.parse_answer)
 
     def start_requests_deprecated(self):
         # 由于知乎更改登录方式，【deprecated】
@@ -76,6 +166,17 @@ class ZhihuSpider(scrapy.Spider):
                 yield scrapy.Request(url, dont_filter=True, headers=self.headers)
 
     def start_requests(self):
+        # TODO： 不知道为什么这样读了cookie不能使用，而却selenium不能放在else下面
+        # cookie_files = os.listdir('./ArticleSpider/cookies/zhihu/')
+        # if cookie_files:
+        #     # 直接使用cookie
+        #     cookie_dict = {}
+        #     for cookie_file in cookie_files:
+        #         cookie_name = cookie_file.split(".")[0]
+        #         with open(os.path.join('./ArticleSpider/cookies/zhihu/', cookie_file), 'rb') as fh:
+        #             cookie_value = pickle.load(fh)
+        #         cookie_dict[cookie_name] = cookie_value
+        # else:
         from selenium import webdriver
         browser = webdriver.Chrome(executable_path="./chromedriver")
 
@@ -102,7 +203,6 @@ class ZhihuSpider(scrapy.Spider):
         cookies = browser.get_cookies()
         print(cookies)
         cookie_dict = {}
-        import pickle
         for cookie in cookies:
             # 写入文件
             f = open('./ArticleSpider/cookies/zhihu/' + cookie['name'] + '.zhihu', 'wb')

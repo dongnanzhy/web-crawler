@@ -52,7 +52,7 @@ class JsonExporterPipeline(object):
         self.file.close()
 
 
-# 采用同步机制写入mysql
+# 采用同步机制写入mysql -- 仅供学习用，后面都用异步方法
 class MysqlPipeline(object):
     def __init__(self):
         self.conn = MySQLdb.connect('192.168.1.3',
@@ -112,33 +112,19 @@ class MysqlTwistedPipeline(object):
     def process_item(self, item, spider):
         # 使用twisted将mysql插入变成异步执行
         query = self.dbpool.runInteraction(self.do_insert, item)
-        query.addErrback(self.handle_error) # 处理异常
+        query.addErrback(self.handle_error, item, spider)  # 处理异常
 
-    def handle_error(self, failure):
+    def handle_error(self, failure, item, spider):
         # 处理异步插入的异常
         print(failure)
 
     def do_insert(self, cursor, item):
         # 执行具体的插入
-        insert_sql = """
-            insert into jobbole_article(title, url, url_object_id, create_date, 
-                                        front_image_url, front_image_path, comment_nums, vote_nums, 
-                                        bookmark_nums, tags, content)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(insert_sql, (item['title'],
-                                    item['url'],
-                                    item['url_object_id'],
-                                    item['create_date'],
-                                    # TODO: 这里front_image_url应该是个list，所以取第一个元素。但不这么做也不会报错？
-                                    item['front_image_url'][0],
-                                    item['front_image_path'],
-                                    item['comment_numbers'],
-                                    item['vote_numbers'],
-                                    item['bookmark_numbers'],
-                                    item['tags'],
-                                    item['content']
-                                    ))
+        # 根据不同的item构建不同的sql语句并插入到mysql中
+        # 可以根据不同的classname做判断，if item.__class__.__name__ == "xxxx"，但这样不好
+
+        insert_sql, params = item.get_insert_sql()
+        cursor.execute(insert_sql, params)
 
 
 # 自定义图像保存pipeline， 继承scrapy的ImagesPipeline

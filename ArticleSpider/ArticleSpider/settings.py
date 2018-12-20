@@ -70,7 +70,7 @@ COOKIES_ENABLED = True
 # 这个就是item在pipeline中的流动（处理）顺序，数字越小代表越先进入pipeline
 ITEM_PIPELINES = {
    # 默认pipeline
-   'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
+   # 'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
    # 默认image pipeline
    # 'scrapy.pipelines.images.ImagesPipeline': 1,
    # 自定义JSON pipeline
@@ -80,7 +80,7 @@ ITEM_PIPELINES = {
    # 自定义mysql pipeline
    # 'ArticleSpider.pipelines.MysqlPipeline': 2,
    # 自定义 异步 mysql pipeline
-   # 'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
 }
 # 定义image的url路径item字段 和 下载存储地址
 IMAGES_URLS_FIELD = "front_image_url"
@@ -119,3 +119,6 @@ MYSQL_HOST = '192.168.1.3'
 MYSQL_DBNAME = 'article_spider'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = '1989zz9891'
+
+SQL_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+SQL_DATE_FORMAT = "%Y-%m-%d"

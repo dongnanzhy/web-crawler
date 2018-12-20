@@ -21,6 +21,9 @@
 # 项目流程【爬取知乎】
 # 1. Requests 模拟知乎登录，Scrapy 模拟知乎登录。由于知乎更改登录设置，deprecated
 # 2. 通过selenium和qr_code 模拟知乎登录，并保存cookie
+# 3. 设计知乎sql表
+# 4. Item Loader提取知乎question，利用知乎API提取知乎answer
+# 5. 异步保存至SQL
 
 # 添加main函数方便pycharm调试
 
