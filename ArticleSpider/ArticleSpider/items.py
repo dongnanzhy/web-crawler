@@ -55,12 +55,13 @@ class ArticleItemLoader(ItemLoader):
 class JobBoleArticleItem(scrapy.Item):
     # MapCompose 可以叠加多个函数
     # 注意：这里title是通过css读取的list，input_processor会对list里每一个元素做操作， function输入时list里的element
+    # MapCompose 可以接受任一多的function，一次调取
     title = scrapy.Field(
         input_processor=MapCompose()
     )
     create_date = scrapy.Field(
-        input_processor=MapCompose(date_convert),
-        output_processor=TakeFirst()
+        input_processor=MapCompose(date_convert)
+        # output_processor=TakeFirst()  由于自定义ItemLoader,所以不需要一次定义output_processor
     )
     url = scrapy.Field()
     url_object_id = scrapy.Field()       # url md5 编码id
@@ -81,5 +82,6 @@ class JobBoleArticleItem(scrapy.Item):
     content = scrapy.Field()
     tags = scrapy.Field(
         input_processor=MapCompose(remove_comment_tags),
+        # Join 是用一个连接符连接list
         output_processor=Join(",")
     )

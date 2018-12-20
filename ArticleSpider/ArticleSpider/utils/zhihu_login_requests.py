@@ -10,6 +10,11 @@ except:
 
 import re
 
+# 1. 先GET知乎首页获得xsrf code
+# 2. POST 用户名密码和xsrf code来登录
+# 3. 保存cookies，检查是否登录状态
+
+
 session = requests.session()
 session.cookies = cookielib.LWPCookieJar(filename="cookies.txt")
 try:
