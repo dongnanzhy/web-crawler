@@ -11,8 +11,8 @@ import scrapy
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import MapCompose, TakeFirst, Join
 
-from ArticleSpider.utils.common import extract_num
-from ArticleSpider.settings import SQL_DATETIME_FORMAT, SQL_DATE_FORMAT
+from utils.common import extract_num
+from settings import SQL_DATETIME_FORMAT, SQL_DATE_FORMAT
 
 
 # default class, just pass

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
+# 注意：通过这种方法可以把ArticleSpider/ArticleSpider 作为source path, 供所有scrapy使用
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # Scrapy settings for ArticleSpider project
 #
@@ -15,6 +18,7 @@ BOT_NAME = 'ArticleSpider'
 SPIDER_MODULES = ['ArticleSpider.spiders']
 NEWSPIDER_MODULE = 'ArticleSpider.spiders'
 
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36"
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'ArticleSpider (+http://www.yourdomain.com)'
@@ -37,6 +41,7 @@ ROBOTSTXT_OBEY = False
 # Disable cookies (enabled by default)
 # 首次加入cookie后，后面的request都会自动加上cookie
 COOKIES_ENABLED = True
+COOKIES_DEBUG = True
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -55,9 +60,11 @@ COOKIES_ENABLED = True
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'ArticleSpider.middlewares.ArticlespiderDownloaderMiddleware': 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+   # 'ArticleSpider.middlewares.ArticlespiderDownloaderMiddleware': 543,
+    # 在所有request中加上settings里设置的USER_AGENT
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 2,
+}
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
@@ -70,7 +77,7 @@ COOKIES_ENABLED = True
 # 这个就是item在pipeline中的流动（处理）顺序，数字越小代表越先进入pipeline
 ITEM_PIPELINES = {
    # 默认pipeline
-   # 'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
+   'ArticleSpider.pipelines.ArticlespiderPipeline': 300,
    # 默认image pipeline
    # 'scrapy.pipelines.images.ImagesPipeline': 1,
    # 自定义JSON pipeline
@@ -80,7 +87,7 @@ ITEM_PIPELINES = {
    # 自定义mysql pipeline
    # 'ArticleSpider.pipelines.MysqlPipeline': 2,
    # 自定义 异步 mysql pipeline
-   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   # 'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
 }
 # 定义image的url路径item字段 和 下载存储地址
 IMAGES_URLS_FIELD = "front_image_url"

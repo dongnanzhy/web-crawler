@@ -6,8 +6,8 @@ from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from urllib import parse
 
-from ArticleSpider.items import JobBoleArticleItem, ArticleItemLoader
-from ArticleSpider.utils.common import get_md5
+from items import JobBoleArticleItem, ArticleItemLoader
+from utils.common import get_md5
 
 
 class JobboleSpider(scrapy.Spider):

@@ -27,6 +27,13 @@
 # 3. Item Loader提取知乎question，利用知乎API提取知乎answer
 # 4. 异步保存至SQL
 
+# 项目流程【爬取拉勾网全栈】 spiders/lagou.py
+# 1. 设计SQL表
+# 2. 生成spider，"scrapy genspider -t crawl <file_name> <start_url>" (-t 指明模板模式，默认为basic)
+# 3. 修改settings sys.path.append(source path)
+# 4. 通过selenium模拟登录，并保存cookie
+
+
 # 添加main函数方便pycharm调试
 
 from scrapy.cmdline import execute
@@ -37,3 +44,4 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath((__file__))))
 # execute(["scrapy", "crawl", "jobbole"])
 execute(["scrapy", "crawl", "zhihu"])
+# execute(["scrapy", "crawl", "lagou"])

@@ -15,7 +15,7 @@ except:
     from urllib import parse
 
 from scrapy.loader import ItemLoader
-from ArticleSpider.items import ZhihuQuestionItem, ZhihuAnswerItem
+from items import ZhihuQuestionItem, ZhihuAnswerItem
 from zheye import zheye
 
 
@@ -266,49 +266,45 @@ class ZhihuSpider(scrapy.Spider):
         现在知乎使用的登录方法
         :return:
         """
-        # TODO： 不知道为什么这样读了cookie不能使用，而却selenium不能放在else下面
-        # cookie_files = os.listdir('./ArticleSpider/cookies/zhihu/')
-        # if cookie_files:
-        #     # 直接使用cookie
-        #     cookie_dict = {}
-        #     for cookie_file in cookie_files:
-        #         cookie_name = cookie_file.split(".")[0]
-        #         with open(os.path.join('./ArticleSpider/cookies/zhihu/', cookie_file), 'rb') as fh:
-        #             cookie_value = pickle.load(fh)
-        #         cookie_dict[cookie_name] = cookie_value
-        # else:
-        from selenium import webdriver
-        browser = webdriver.Chrome(executable_path="./chromedriver")
+        # 注意：cookies是一个list，以name为文件名的写法没法读取
+        # 从文件读取cookie
+        cookies = []
+        if os.path.exists('./ArticleSpider/cookies/zhihu/zhihu.cookie'):
+            cookies = pickle.load(open('./ArticleSpider/cookies/zhihu/zhihu.cookie', 'rb'))
+        if not cookies:
+            from selenium import webdriver
+            browser = webdriver.Chrome(executable_path="./chromedriver")
 
-        # username_password login not working
-        # browser.get("https://www.zhihu.com/signin")
-        # browser.find_element_by_css_selector(".SignFlow-accountInput.Input-wrapper input").send_keys(
-        #     "xxx")
-        # browser.find_element_by_css_selector(".SignFlow-password input").send_keys(
-        #     "xxx")
-        # browser.find_element_by_css_selector(
-        #     ".Button.SignFlow-submitButton").click()
+            # username_password login not working
+            # browser.get("https://www.zhihu.com/signin")
+            # browser.find_element_by_css_selector(".SignFlow-accountInput.Input-wrapper input").send_keys(
+            #     "xxx")
+            # browser.find_element_by_css_selector(".SignFlow-password input").send_keys(
+            #     "xxx")
+            # browser.find_element_by_css_selector(
+            #     ".Button.SignFlow-submitButton").click()
 
-        # QR code login
-        # 打开知乎首页
-        browser.get('https://www.zhihu.com/')
-        time.sleep(2)
-        # 进入登陆页面
-        browser.find_element_by_css_selector(".SignContainer-switch span").click()
-        time.sleep(1)
-        # 点击社交网络账号登陆
-        browser.find_element_by_css_selector("span.Login-qrcode button").click()  # 点击qr_code登陆
-        time.sleep(10)
+            # QR code login
+            # 打开知乎首页
+            browser.get('https://www.zhihu.com/')
+            time.sleep(2)
+            # 进入登陆页面
+            browser.find_element_by_css_selector(".SignContainer-switch span").click()
+            time.sleep(1)
+            # 点击社交网络账号登陆
+            browser.find_element_by_css_selector("span.Login-qrcode button").click()  # 点击qr_code登陆
+            time.sleep(10)
 
-        cookies = browser.get_cookies()
-        print(cookies)
+            cookies = browser.get_cookies()
+            print(cookies)
+            # 写入文件
+            pickle.dump(cookies, open('./ArticleSpider/cookies/zhihu/zhihu.cookie', 'wb'))
+
+            browser.close()
+
         cookie_dict = {}
         for cookie in cookies:
-            # 写入文件
-            f = open('./ArticleSpider/cookies/zhihu/' + cookie['name'] + '.zhihu', 'wb')
-            pickle.dump(cookie, f)
-            f.close()
-            cookie_dict[cookie['name']] = cookie['value']
-        browser.close()
+            cookie_dict[cookie["name"]] = cookie["value"]
+
         # 不指明回调函数，默认为self.parse
         return [scrapy.Request(url=self.start_urls[0], headers=self.headers, dont_filter=True, cookies=cookie_dict)]
