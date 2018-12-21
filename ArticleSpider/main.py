@@ -9,7 +9,7 @@
 # 可以在shell里调试html，不用每次运行都访问一次url
 # scrapy shell <url>
 
-# 项目流程【爬取博客系统】
+# 项目流程【爬取博客系统】spiders/jobbole.py
 # 1. 使用xPath extract html 或者 使用css extract html
 # 2. 通过异步call back 函数爬取网站
 # 3. 设计item
@@ -18,12 +18,14 @@
 # 6. 爬取数据导出MySQL，同步 + 异步两种方式
 # 7. 利用ItemLoader整理代码
 
-# 项目流程【爬取知乎】
-# 1. Requests 模拟知乎登录，Scrapy 模拟知乎登录。由于知乎更改登录设置，deprecated
-# 2. 通过selenium和qr_code 模拟知乎登录，并保存cookie
-# 3. 设计知乎sql表
-# 4. Item Loader提取知乎question，利用知乎API提取知乎answer
-# 5. 异步保存至SQL
+# 项目流程【爬取知乎】 spiders/zhihu.py
+# 1. 知乎登录，以方便从首页DFS
+#     1-a. Requests 模拟知乎登录(tools.zhihu_login_requests.py)
+#     1-b. Scrapy 模拟知乎登录(w/o 验证码/倒立文字)。由于知乎更改登录设置，deprecated
+#     1-c. 通过selenium和qr_code 模拟知乎登录，并保存cookie
+# 2. 设计知乎sql表
+# 3. Item Loader提取知乎question，利用知乎API提取知乎answer
+# 4. 异步保存至SQL
 
 # 添加main函数方便pycharm调试
 

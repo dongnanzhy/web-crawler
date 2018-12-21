@@ -16,9 +16,13 @@ except:
 
 from scrapy.loader import ItemLoader
 from ArticleSpider.items import ZhihuQuestionItem, ZhihuAnswerItem
+from zheye import zheye
 
 
 # 1. spider 入口：start_requests()，完成登录
+#    1-a. 旧版本知乎登录，POST用户名，密码和xsrf code (start_requests_deprecated())
+#    1-b. 旧版本知乎登录，POST用户名，密码，xsrf code 以及验证码图片/倒立文字验证码(注意这里由于要保证同一个session，利用了callback，比较tricky)
+#    1-c. selenium模拟，qr code登录 (start_requests())
 # 2. 异步到parse(), 从start_urls开始DFS爬取
 # 3. 如果不是question类型url，继续DFS；如果是question类型url，异步到parse_question()解析
 # 4. 解析question，yield item，scrapy自动检测是item后路由到pipeline
@@ -67,11 +71,12 @@ class ZhihuSpider(scrapy.Spider):
                 yield scrapy.Request(request_url, headers=self.headers,
                                      meta={"question_id": question_id},
                                      callback=self.parse_question)
+                # break   # debug
             else:
-                pass  # debug
+                # pass  # debug
                 # 如果不是question页面则直接进行下一步跟踪
-                # yield scrapy.Request(url, headers=self.headers,
-                #                      callback=self.parse)
+                yield scrapy.Request(url, headers=self.headers,
+                                     callback=self.parse)
 
     def parse_question(self, response):
         # 处理question页面， 从页面中提取出具体的question item
@@ -151,12 +156,103 @@ class ZhihuSpider(scrapy.Spider):
                 "phone_num": "xxx",
                 "password": "xxx"
             }
-            return [scrapy.FormRequest(
-                url=post_url,
-                formdata=post_data,
-                headers=self.headers,
-                callback=self.check_login
-            )]
+
+            # 如果没有知乎验证码需求，可以直接调用这一步返回，不需要yield
+            # return [scrapy.FormRequest(
+            #     url=post_url,
+            #     formdata=post_data,
+            #     headers=self.headers,
+            #     callback=self.check_login
+            # )]
+
+            # 注意：这里之所以要这样操作，是因为所有的验证码，xsrf code request操作必须要在同一个session下（见utils.zhihu_login_requests.py）
+            #      我们无法在scrapy框架下直接使用session，所以我们yield出去，利用scrapy的callback
+            #      callback会保证scrapy在同一个session下用相同的cookie
+            import time
+            t = str(int(time.time() * 1000))
+            # 知乎验证码
+            captcha_url = "https://www.zhihu.com/captcha.gif?r={0}&type=login".format(t)
+            yield scrapy.Request(captcha_url, headers=self.headers, meta={"post_data": post_data},
+                                 callback=self.login_after_captcha)
+            # 知乎倒立文字验证
+            # captcha_url = "https://www.zhihu.com/captcha.gif?r={0}&type=login&lang=cn".format(t)
+            # yield scrapy.Request(captcha_url, headers=self.headers, meta={"post_data": post_data},
+            #                      callback=self.login_after_captcha_cn)
+
+    def login_after_captcha_cn(self, response):
+        """
+        知乎倒立文字验证码识别登录
+        :param response:
+        :return:
+        """
+        with open("captcha_cn.jpg", "wb") as f:
+            # 注意这里图片是response.body
+            f.write(response.body)
+            f.close()
+
+        z = zheye()
+        positions = z.Recognize('captcha_cn.jpg')
+
+        pos_array = []
+        # 有可能有1个或者2个倒立文字
+        if len(positions) == 2:
+            # zheye识别时可能不是按照x轴先后顺序输出,因此在这里作判断
+            if positions[0][1] > positions[1][1]:
+                # 先放左边点的x轴，y轴坐标，再放右边点的x轴，y轴坐标
+                pos_array.append([positions[1][1], positions[1][0]])
+                pos_array.append([positions[0][1], positions[0][0]])
+            else:
+                pos_array.append([positions[0][1], positions[0][0]])
+                pos_array.append([positions[1][1], positions[1][0]])
+        else:
+            pos_array.append([positions[0][1], positions[0][0]])
+
+        post_data = response.meta.get("post_data", {})
+        post_url = "https://www.zhihu.com/login/phone_num"
+        if len(positions) == 2:
+            post_data["captcha"] = '{"img_size": [200, 44], "input_points": [[%.2f, %f], [%.2f, %f]]}' % (
+                pos_array[0][0] / 2, pos_array[0][1] / 2, pos_array[1][0] / 2, pos_array[1][1] / 2)
+        else:
+            post_data["captcha"] = '{"img_size": [200, 44], "input_points": [[%.2f, %f]]}' % (
+                pos_array[0][0] / 2, pos_array[0][1] / 2)
+        post_data['captcha_type'] = "cn"
+        return [scrapy.FormRequest(
+            url=post_url,
+            formdata=post_data,
+            headers=self.headers,
+            callback=self.check_login
+        )]
+
+    def login_after_captcha(self, response):
+        """
+        知乎验证码识别登录
+        :param response:
+        :return:
+        """
+        with open("captcha.jpg", "wb") as f:
+            # 注意这里图片是response.body
+            f.write(response.body)
+            f.close()
+
+        from PIL import Image
+        try:
+            im = Image.open('captcha.jpg')
+            im.show()
+            im.close()
+        except:
+            pass
+
+        captcha = input("输入验证码\n>")
+
+        post_data = response.meta.get("post_data", {})
+        post_url = "https://www.zhihu.com/login/phone_num"
+        post_data["captcha"] = captcha
+        return [scrapy.FormRequest(
+            url=post_url,
+            formdata=post_data,
+            headers=self.headers,
+            callback=self.check_login
+        )]
 
     def check_login(self, response):
         # 验证服务器的返回数据判断是否成功
@@ -166,6 +262,10 @@ class ZhihuSpider(scrapy.Spider):
                 yield scrapy.Request(url, dont_filter=True, headers=self.headers)
 
     def start_requests(self):
+        """
+        现在知乎使用的登录方法
+        :return:
+        """
         # TODO： 不知道为什么这样读了cookie不能使用，而却selenium不能放在else下面
         # cookie_files = os.listdir('./ArticleSpider/cookies/zhihu/')
         # if cookie_files:
