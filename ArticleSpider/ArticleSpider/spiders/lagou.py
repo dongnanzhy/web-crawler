@@ -20,6 +20,12 @@ class LagouSpider(CrawlSpider):
     allowed_domains = ['www.lagou.com']
     start_urls = ['https://www.lagou.com/']
 
+    # 这里重定义了源码里的变量，会自动覆盖settings里的值
+    custom_settings = {
+        "COOKIES_ENABLED": True,
+        "COOKIES_DEBUG": True
+    }
+
     rules = (
         Rule(LinkExtractor(allow=("zhaopin/.*",)), follow=True),
         Rule(LinkExtractor(allow=("gongsi/j\d+.html",)), follow=True),
@@ -59,6 +65,7 @@ class LagouSpider(CrawlSpider):
 
         job_item = item_loader.load_item()
 
+        # TODO: 这里不是yield？
         return job_item
 
     def start_requests(self):
@@ -76,8 +83,8 @@ class LagouSpider(CrawlSpider):
             import time
             browser = webdriver.Chrome(executable_path="./chromedriver")
             browser.get("https://passport.lagou.com/login/login.html")
-            browser.find_element_by_css_selector(".form_body .input.input_white").send_keys("0012064094331")
-            browser.find_element_by_css_selector('.form_body input[type="password"]').send_keys("Zhy198901")
+            browser.find_element_by_css_selector(".form_body .input.input_white").send_keys("username")
+            browser.find_element_by_css_selector('.form_body input[type="password"]').send_keys("password")
             browser.find_element_by_css_selector('div[data-view="passwordLogin"] input.btn_lg').click()
             time.sleep(10)
 

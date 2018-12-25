@@ -36,6 +36,14 @@
 # 4. 异步保存至SQL
 
 
+# SCRAPY进阶 【反爬虫】
+# 1. Scrapy架构
+# 2. http.Request 和 Response
+# 3. downloadermiddleware 随机更换user agent
+# 4. downloadermiddleware 更换ip代理(proxy) (付费软件crawlera, 或者TOR)
+# 5. 验证码识别 (在线打码：云打码)
+# 6. 设置custom_settings
+
 # 添加main函数方便pycharm调试
 
 from scrapy.cmdline import execute

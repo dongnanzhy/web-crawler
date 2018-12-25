@@ -14,8 +14,8 @@ browser = webdriver.Chrome(executable_path='../chromedriver')
 # 自己写的，有点问题
 # browser.get('https://www.zhihu.com/signup?next=%2F')
 # browser.find_element_by_css_selector(".SignContainer-switch span").click()
-# browser.find_element_by_css_selector(".SignFlow-accountInput.Input-wrapper input[name='username']").send_keys("dongnanzhy@163.com")
-# browser.find_element_by_css_selector(".SignFlow-password input[name='password']").send_keys("1989zz9891")
+# browser.find_element_by_css_selector(".SignFlow-accountInput.Input-wrapper input[name='username']").send_keys("xxx@163.com")
+# browser.find_element_by_css_selector(".SignFlow-password input[name='password']").send_keys("xxx")
 # browser.find_element_by_css_selector(".Button.SignFlow-submitButton").click()
 
 # facebook

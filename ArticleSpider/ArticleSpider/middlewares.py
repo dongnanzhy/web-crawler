@@ -6,6 +6,8 @@
 # https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
 from scrapy import signals
+from fake_useragent import UserAgent
+from tools.crawl_xici_ip import GetIP
 
 
 class ArticlespiderSpiderMiddleware(object):
@@ -101,3 +103,36 @@ class ArticlespiderDownloaderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+class RandomUserAgentMiddleware(object):
+    #随机更换user-agent
+    def __init__(self, crawler):
+        super(RandomUserAgentMiddleware, self).__init__()
+        # 这里用到github开源fake_useragent
+        self.ua = UserAgent()
+        self.ua_type = crawler.settings.get("RANDOM_UA_TYPE", "random")
+        # 自己写random list 不如直接调用fake user agent包
+        # self.user_agent_list = crawler.settings.get("user_agent_list", [])
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def process_request(self, request, spider):
+        def get_ua():
+            # 注意这里很神奇，下面getattr函数等效于self.ua.random
+            return getattr(self.ua, self.ua_type)
+        # 这里可以直接设置所有request的header。
+        request.headers.setdefault('User-Agent', get_ua())
+
+
+class RandomProxyMiddleware(object):
+    # 动态设置ip代理
+    def process_request(self, request, spider):
+        # 这里也可以使用如下选择
+        # 1. github开源的scrapy-proxies
+        # 2. scrapy crawlera 简单好用但是收费的代理
+        get_ip = GetIP()
+        request.meta["proxy"] = get_ip.get_random_ip()
+
