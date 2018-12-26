@@ -7,6 +7,9 @@
 
 from scrapy import signals
 from fake_useragent import UserAgent
+from selenium import webdriver
+from scrapy.http import HtmlResponse
+
 from tools.crawl_xici_ip import GetIP
 
 
@@ -136,3 +139,25 @@ class RandomProxyMiddleware(object):
         get_ip = GetIP()
         request.meta["proxy"] = get_ip.get_random_ip()
 
+
+class JSPageMiddleware(object):
+    """
+    通过chrome请求动态网页
+    """
+    # 注意： 如果在init里面初始化browser，那如果spider关闭，brower不会关闭。所以把brower放在spider里面
+    def process_request(self, request, spider):
+        if spider.name == "jobbole":
+            # browser = webdriver.Chrome(executable_path="../chromedriver.exe")
+            spider.browser.get(request.url)
+            import time
+            time.sleep(3)
+            print("访问:{0}".format(request.url))
+
+            return HtmlResponse(url=spider.browser.current_url, body=spider.browser.page_source, encoding="utf-8", request=request)
+
+# from pyvirtualdisplay import Display
+# display = Display(visible=0, size=(800, 600))
+# display.start()
+#
+# browser = webdriver.Chrome(executable_path="../chromedriver.exe")
+# browser.get()

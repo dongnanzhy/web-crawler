@@ -6,6 +6,10 @@ from scrapy.http import Request
 from scrapy.loader import ItemLoader
 from urllib import parse
 
+from selenium import webdriver
+from scrapy.xlib.pydispatch import dispatcher
+from scrapy import signals
+
 from items import JobBoleArticleItem, ArticleItemLoader
 from utils.common import get_md5
 
@@ -15,6 +19,30 @@ class JobboleSpider(scrapy.Spider):
     allowed_domains = ['blog.jobbole.com']
     start_urls = ['http://blog.jobbole.com/all-posts/']
 
+    """
+    # 设置selenium当爬虫退出的时候关闭chrome
+    def __init__(self):
+        self.browser = webdriver.Chrome(executable_path="../chromedriver")
+        super(JobboleSpider, self).__init__()
+        dispatcher.connect(self.spider_closed, signals.spider_closed)
+
+    def spider_closed(self, spider):
+        #当爬虫退出的时候关闭chrome
+        print ("spider closed")
+        self.browser.quit()
+    """
+
+    # 收集伯乐在线所有404的url以及404页面数
+    handle_httpstatus_list = [404]
+
+    def __init__(self, **kwargs):
+        self.fail_urls = []
+        super(JobboleSpider, self).__init__()
+        dispatcher.connect(self.handle_spider_closed, signals.spider_closed)
+
+    def handle_spider_closed(self, spider, reason):
+        self.crawler.stats.set_value("failed_urls", ",".join(self.fail_urls))
+
     def parse(self, response):
         """
         1. 获取文章列表页中的url并交给scrapy下载后并进行解析
@@ -22,6 +50,10 @@ class JobboleSpider(scrapy.Spider):
         :param response:
         :return:
         """
+        # 设置Stats Collection计数404页面的url和个数
+        if response.status == 404:
+            self.fail_urls.append(response.url)
+            self.crawler.stats.inc_value("failed_url")
 
         # 解析列表页所有文章url并交给scrapy下载后并进行解析
         # ::attr(href) 代表去属性名为href的值

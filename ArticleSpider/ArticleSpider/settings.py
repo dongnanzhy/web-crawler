@@ -68,9 +68,11 @@ DOWNLOADER_MIDDLEWARES = {
     'ArticleSpider.middlewares.RandomUserAgentMiddleware': 543,
     # 在所有request中加上settings里设置的USER_AGENT
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 2,
+    # 设置通过selenium下载页面
+    # 'ArticleSpider.middlewares.JSPageMiddleware': 3,
 }
 
-# Enable or disable extensions
+# Enable or disable extensions  自定义extension
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
 #EXTENSIONS = {
 #    'scrapy.extensions.telnet.TelnetConsole': None,

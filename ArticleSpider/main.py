@@ -3,7 +3,10 @@
 # HOW TO START
 # 1. 创建project： scrapy startproject <project_name>
 # 2. 创建spider script： scrapy genspider <file_name> <start_url>
+#    2-a. "scrapy genspider -t crawl <file_name> <start_url>" (-t 指明模板模式，默认为basic)
 # 3. 运行spider script: scrapy crawl jobbole
+#    3-a. 暂停与重启：scrapy crawl lagou -s JOBDIR=job_info/001
+#                  (注意不同spider不用次运行必须用不同的dir，通过ctrl+C终止[kill -f 不是kill -9] )
 
 # SCRAPY SHELL 运用
 # 可以在shell里调试html，不用每次运行都访问一次url
@@ -36,13 +39,27 @@
 # 4. 异步保存至SQL
 
 
-# SCRAPY进阶 【反爬虫】
-# 1. Scrapy架构
+# SCRAPY进阶 【反爬虫】  middlewares.py
+# 1. Scrapy架构 (core: engine, spider, scheduler, downloader, item, 2 middlewares (spider middleware and downloader middleware))
 # 2. http.Request 和 Response
 # 3. downloadermiddleware 随机更换user agent
 # 4. downloadermiddleware 更换ip代理(proxy) (付费软件crawlera, 或者TOR)
 # 5. 验证码识别 (在线打码：云打码)
 # 6. 设置custom_settings
+
+# SCRAPY进阶 【selenium 等】  tools/selenium_spider.py
+# 1. selenium模拟知乎登录，模拟微博鼠标下拉
+# 2. chromedriver不加载图片, phantomJS
+# 3. scrapy downloader middleware 集成selenium
+# 4. 动态网页(url带有"?")： scrapy-splash, selenium grid, splinter (略)
+# 5. scrapy 暂停与重启，url去重(hash.sha1), telnet(scrapy会默认开启telnet，监听端口，可以通过命令行连接)
+# 6. spider middleware 可以参考scrapy定义的几个(depth, httperror...)
+# 7. spider Stats Collection(数据收集)
+# 8. scrapy Signals(信号)。非常重要，关联了各个core
+# 9. scrapy Extensions(扩展)
+#    spider/downloader middleware实际上都是有extension manager管理的，定义函数与信号量进行了绑定
+#    主要入口 from_crawler(), 在里面绑定信号量（见官网例子）
+
 
 # 添加main函数方便pycharm调试
 
