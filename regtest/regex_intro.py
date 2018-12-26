@@ -22,8 +22,8 @@ line = "boooooobby123"
 # ?用来采用非贪婪匹配（从左向右匹配,遇到第一个完成）。 贪婪匹配是从右向左看，把最后一个匹配
 regex_str1 = ".*?(b.*b).*"
 regex_str2 = ".*?(b.*?b).*"
-match_obj1 = re.match(regex_str1, line)
-match_obj2 = re.match(regex_str2, line)
+match_obj1 = re.match(regex_str1, line)   # boooooobb
+match_obj2 = re.match(regex_str2, line)   # boooooob
 if match_obj1:
     print(match_obj1.group(1))
 if match_obj2:
