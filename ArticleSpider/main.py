@@ -61,6 +61,13 @@
 #    主要入口 from_crawler(), 在里面绑定信号量（见官网例子）
 
 
+# SCRAPY分布式爬虫   ScrapyRedisTest/
+# 1. 分布式需要解决的问题： request队列集中管理 + 去重集中管理
+# 2. Redis intro: 五种数据类型：字符串，哈希，列表，集合，可排序集合
+# 3. Scrapy Redis implementation and 源码分析
+
+
+
 # 添加main函数方便pycharm调试
 
 from scrapy.cmdline import execute
