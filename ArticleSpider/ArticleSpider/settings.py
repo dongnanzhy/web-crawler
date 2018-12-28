@@ -65,7 +65,7 @@ COOKIES_ENABLED = False
 DOWNLOADER_MIDDLEWARES = {
     # 'ArticleSpider.middlewares.ArticlespiderDownloaderMiddleware': 543,
     # 自己定义的随机更换agent的middleware,自定义的middleware要大于系统自带的，才能保证后执行覆盖
-    'ArticleSpider.middlewares.RandomUserAgentMiddleware': 543,
+    # 'ArticleSpider.middlewares.RandomUserAgentMiddleware': 543,
     # 在所有request中加上settings里设置的USER_AGENT
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 2,
     # 设置通过selenium下载页面
@@ -93,7 +93,9 @@ ITEM_PIPELINES = {
    # 自定义mysql pipeline
    # 'ArticleSpider.pipelines.MysqlPipeline': 2,
    # 自定义 异步 mysql pipeline
-   'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   # 'ArticleSpider.pipelines.MysqlTwistedPipeline': 2,
+   # 自定义 elasticsearch pipeline
+   'ArticleSpider.pipelines.ElasticsearchPipeline': 2,
 }
 # 定义image的url路径item字段 和 下载存储地址
 IMAGES_URLS_FIELD = "front_image_url"

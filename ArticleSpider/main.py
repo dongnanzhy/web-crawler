@@ -16,9 +16,11 @@
 # 1. 使用xPath extract html 或者 使用css extract html
 # 2. 通过异步call back 函数爬取网站
 # 3. 设计item
-# 4. 修改settings的pipeline，加入自定义image pipeline保存图片及路径
+# 4. 修改settings的pipeline，加入自定义image pipeline保存图片及路径a
 # 5. 爬取数据导出JSON文件
 # 6. 爬取数据导出MySQL，同步 + 异步两种方式
+#    tip: 外部链接MYSQL记得修改privillage
+#    tip: python2 默认utf8，中文GB2312[s.decode('GB2312').encode('utf8)]； python3 全部默认为unicode[s.encode('utf8')]
 # 7. 利用ItemLoader整理代码
 
 # 项目流程【爬取知乎】 spiders/zhihu.py
@@ -67,6 +69,20 @@
 # 3. Scrapy Redis implementation and 源码分析
 
 
+# SCRAPY with ElasticSearch
+# NOSQL compared to SQL: SQL 都是一对一的关系，如果tag:[a, b], 那要单独保存tag表；NOSQL可以直接保存JSON
+# 1. elasticsearch-rtf: 集成了很多中文分析plugin；
+#    elasticsearch-head：插件(git clone + npm install + npm run start); 使用需要配置elasticsearch的config
+# 2. elasticsearch CRUD 操作；批处理操作：mget & bulk；
+# 3. elasticsearch mapping, 中文analyzer(ik)
+# 4. elasticsearch query,
+#    tips: match_phrase并不是找phrase，而是确保分词后每个词"同时"出现在document(当然slop可以设置距离)
+#          multi_match: 搜索多个fields
+#          stored_fields: 指定返回哪些字段
+#          组合查询bool: 包括must, should, must_not, filter
+# 5. elasticsearch ORM save data
+
+
 
 # 添加main函数方便pycharm调试
 
@@ -76,6 +92,6 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.abspath((__file__))))
-# execute(["scrapy", "crawl", "jobbole"])
+execute(["scrapy", "crawl", "jobbole"])
 # execute(["scrapy", "crawl", "zhihu"])
-execute(["scrapy", "crawl", "lagou"])
+# execute(["scrapy", "crawl", "lagou"])

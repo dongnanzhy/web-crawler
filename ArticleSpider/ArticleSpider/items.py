@@ -15,6 +15,7 @@ from w3lib.html import remove_tags
 
 from utils.common import extract_num
 from settings import SQL_DATETIME_FORMAT, SQL_DATE_FORMAT
+from models.es_types import ArticleType
 
 
 # default class, just pass
@@ -104,6 +105,26 @@ class JobBoleArticleItem(scrapy.Item):
                   self['tags'],
                   self['content'])
         return insert_sql, params
+
+    def save_to_es(self):
+        article = ArticleType()
+
+        article.title = self['title'],
+        article.url = self['url']
+        # 注意这里保存到了meta id里
+        article.meta.id = self['url_object_id']
+        article.create_date = self['create_date']
+        article.front_image_url = self['front_image_url'][0]
+        if "front_image_path" in self:
+            article.front_image_path = self['front_image_path']
+        article.comment_numbers = self['comment_numbers']
+        article.vote_numbers = self['vote_numbers']
+        article.bookmark_numbers = self['bookmark_numbers']
+        article.tags = self['tags']
+        # 调用w3lib来remove tag
+        article.content = remove_tags(self['content'])
+        article.save()
+        return
 
 
 class ZhihuQuestionItem(scrapy.Item):
