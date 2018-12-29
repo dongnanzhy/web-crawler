@@ -7,6 +7,7 @@
 import datetime
 import re
 
+import redis
 import scrapy
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import MapCompose, TakeFirst, Join
@@ -15,7 +16,12 @@ from w3lib.html import remove_tags
 
 from utils.common import extract_num
 from settings import SQL_DATETIME_FORMAT, SQL_DATE_FORMAT
-from models.es_types import ArticleType
+from models.es_types import JobboleArticleType, ZhihuAnswerType, ZhihuQuestionType, LagouJobType
+
+from elasticsearch_dsl.connections import connections
+es = connections.create_connection(hosts=['192.168.1.3:9200'])
+
+redis_cli = redis.StrictRedis(host="192.168.1.3", port=6379)
 
 
 # default class, just pass
@@ -42,6 +48,31 @@ def remove_comment_tags(value):
         return ""
     else:
         return value
+
+
+def gen_suggests(index, info_tuple):
+    """
+    根据字符串生成搜索建议数组，供es suggest调用
+    :param index:
+    :param info_tuple:
+    :return:
+    """
+    used_words = set()
+    suggests = []
+    for text, weight in info_tuple:
+        if text:
+            # 调用es的analyze接口分析字符串
+            words = es.indices.analyze(index=index,
+                                       body={"analyzer": "ik_max_word", "text": text})
+            analyzed_words = set([r["token"] for r in words['tokens'] if len(r['token']) > 1])
+            new_words = analyzed_words - used_words
+        else:
+            new_words = set()
+
+        if new_words:
+            used_words.update(new_words)
+            suggests.append({"input": list(new_words), "weight": weight})
+    return suggests
 
 
 # 自定义ItemLoader,设置默认output_processor
@@ -107,23 +138,29 @@ class JobBoleArticleItem(scrapy.Item):
         return insert_sql, params
 
     def save_to_es(self):
-        article = ArticleType()
+        article = JobboleArticleType()
 
-        article.title = self['title'],
+        article.title = self.get('title', ''),
         article.url = self['url']
         # 注意这里保存到了meta id里
         article.meta.id = self['url_object_id']
-        article.create_date = self['create_date']
+        article.create_date = self.get('create_date', datetime.datetime.now().date())
         article.front_image_url = self['front_image_url'][0]
         if "front_image_path" in self:
             article.front_image_path = self['front_image_path']
-        article.comment_numbers = self['comment_numbers']
-        article.vote_numbers = self['vote_numbers']
-        article.bookmark_numbers = self['bookmark_numbers']
-        article.tags = self['tags']
+        article.comment_numbers = self.get('comment_numbers', 0)
+        article.vote_numbers = self.get('vote_numbers', 0)
+        article.bookmark_numbers = self.get('bookmark_numbers', 0)
+        article.tags = self.get('tags', '')
         # 调用w3lib来remove tag
         article.content = remove_tags(self['content'])
+
+        article.suggest = gen_suggests(JobboleArticleType._index._name,
+                                       ((article.title, 10), (article.tags, 7), (article.content, 5)))
+
         article.save()
+        # redis中记录爬取document数目
+        redis_cli.incr("jobbole_count")
         return
 
 
@@ -174,6 +211,40 @@ class ZhihuQuestionItem(scrapy.Item):
 
         return insert_sql, params
 
+    def save_to_es(self):
+        question = ZhihuQuestionType()
+
+        question.meta.id = self['zhihu_id'][0]
+        question.zhihu_id = self['zhihu_id'][0]
+        question.topics = ",".join(self.get('topics', [""]))
+        question.url = self['url'][0]
+        question.title = "".join(self.get("title", [""]))
+        question.content = remove_tags("".join(self.get("content", [""])))
+
+        # 由于知乎在数字中加入了逗号，这里做了一点小改动
+        answer_num = extract_num("".join([text.replace(",", "") for text in self.get('answer_num', [""])]))
+        comments_num = extract_num("".join([text.replace(",", "") for text in self.get('comments_num', [""])]))
+        if len(self["watch_user_num"]) == 2:
+            watch_user_num = int(self["watch_user_num"][0].replace(",", ""))
+            click_num = int(self["watch_user_num"][1].replace(",", ""))
+        else:
+            watch_user_num = int(self["watch_user_num"][0].replace(",", ""))
+            click_num = 0
+
+        question.answer_num = answer_num
+        question.comments_num = comments_num
+        question.watch_user_num = watch_user_num
+        question.click_num = click_num
+        question.crawl_time = datetime.datetime.now().date()
+
+        question.suggest = gen_suggests(ZhihuQuestionType._index._name,
+                                       ((question.title, 10), (question.topics, 7), (question.content, 5)))
+
+        question.save()
+        # redis中记录爬取document数目
+        redis_cli.incr("zhihuquestion_count")
+        return
+
 
 class ZhihuAnswerItem(scrapy.Item):
     # 知乎的问题回答 item
@@ -208,6 +279,35 @@ class ZhihuAnswerItem(scrapy.Item):
                   self['crawl_time'].strftime(SQL_DATETIME_FORMAT))
 
         return insert_sql, params
+
+    def save_to_es(self):
+        answer = ZhihuAnswerType()
+
+        answer.meta.id = self['zhihu_id']
+        answer.zhihu_id = self['zhihu_id']
+        answer.url = self['url']
+        answer.question_id = self['question_id']
+        answer.author_id = self['author_id']
+        answer.content = self['content']
+        answer.praise_num = self.get('praise_num', 0)
+        answer.comments_num = self.get('comments_num', 0)
+        if 'create_time' in self:
+            answer.create_time = datetime.datetime.fromtimestamp(self['create_time'])
+        else:
+            answer.create_time = datetime.datetime.now().date()
+        if 'update_time' in self:
+            answer.update_time = datetime.datetime.fromtimestamp(self['update_time'])
+        else:
+            answer.update_time = datetime.datetime.now().date()
+        answer.crawl_time = self['crawl_time']
+
+        answer.suggest = gen_suggests(ZhihuAnswerType._index._name,
+                                      [(answer.content, 5)])
+
+        answer.save()
+        # redis中记录爬取document数目
+        redis_cli.incr("zhihuanswer_count")
+        return
 
 
 def remove_splash(value):
@@ -273,3 +373,32 @@ class LagouJobItem(scrapy.Item):
         )
 
         return insert_sql, params
+
+    def save_to_es(self):
+        job = LagouJobType()
+
+        job.meta.id = self['url_object_id']
+        job.title = self['title']
+        job.url = self['url']
+        job.url_object_id = self['url_object_id']
+        job.salary = self.get('salary', '')
+        job.job_city = self.get('job_city', '')
+        job.work_years = self.get('work_years', '')
+        job.degree_need = self.get('degree_need', '')
+        job.job_type = self.get('job_type', '')
+        job.publish_time = self.get('publish_time', '')
+        job.job_advantage = self.get('job_advantage', '')
+        job.job_desc = self.get('job_desc', '')
+        job.job_addr = self.get('job_addr', '')
+        job.company_name = self.get('company_name', '')
+        job.company_url = self.get('company_url', '')
+        job.tags = self.get('tags', '')
+        job.crawl_time = self['crawl_time']
+
+        job.suggest = gen_suggests(LagouJobType._index._name,
+                                   ((job.title, 10), (job.tags, 8), (job.job_desc, 5)))
+
+        job.save()
+        # redis中记录爬取document数目
+        redis_cli.incr("lagou_count")
+        return

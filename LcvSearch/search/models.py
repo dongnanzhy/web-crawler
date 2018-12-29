@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 __author__ = 'dongnanzhy'
 
+from django.db import models
 from datetime import datetime
 from elasticsearch_dsl import Document, Date, Nested, Boolean, analyzer, Completion, Keyword, Text, Integer
 from elasticsearch_dsl.analysis import CustomAnalyzer as _CustomAnalyzer
 
 from elasticsearch_dsl.connections import connections
+
+# Create your models here.
 
 connections.create_connection(hosts=['192.168.1.3:9200'])
 

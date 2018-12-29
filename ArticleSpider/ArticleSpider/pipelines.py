@@ -14,9 +14,6 @@ from twisted.enterprise import adbapi
 import MySQLdb
 import MySQLdb.cursors
 
-from models.es_types import ArticleType
-from w3lib.html import remove_tags
-
 
 class ArticlespiderPipeline(object):
     def process_item(self, item, spider):

@@ -74,7 +74,6 @@ class JobboleSpider(scrapy.Spider):
         if next_url:
             yield Request(url=parse.urljoin(response.url, next_url), callback=self.parse)
 
-
     def parse_detail(self, response):
         """
         提取文章的具体字段， 回调函数

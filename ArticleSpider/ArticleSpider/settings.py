@@ -33,7 +33,7 @@ ROBOTSTXT_OBEY = False
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 # 延迟下载，以防止被反爬虫
-#DOWNLOAD_DELAY = 3
+DOWNLOAD_DELAY = 2
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
@@ -65,7 +65,7 @@ COOKIES_ENABLED = False
 DOWNLOADER_MIDDLEWARES = {
     # 'ArticleSpider.middlewares.ArticlespiderDownloaderMiddleware': 543,
     # 自己定义的随机更换agent的middleware,自定义的middleware要大于系统自带的，才能保证后执行覆盖
-    # 'ArticleSpider.middlewares.RandomUserAgentMiddleware': 543,
+    'ArticleSpider.middlewares.RandomUserAgentMiddleware': 543,
     # 在所有request中加上settings里设置的USER_AGENT
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 2,
     # 设置通过selenium下载页面

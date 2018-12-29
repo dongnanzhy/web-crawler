@@ -83,7 +83,7 @@ class LagouSpider(CrawlSpider):
             import time
             browser = webdriver.Chrome(executable_path="./chromedriver")
             browser.get("https://passport.lagou.com/login/login.html")
-            browser.find_element_by_css_selector(".form_body .input.input_white").send_keys("username")
+            browser.find_element_by_css_selector(".form_body .input.input_white").send_keys("phone_num")
             browser.find_element_by_css_selector('.form_body input[type="password"]').send_keys("password")
             browser.find_element_by_css_selector('div[data-view="passwordLogin"] input.btn_lg').click()
             time.sleep(10)

@@ -80,8 +80,22 @@
 #          multi_match: 搜索多个fields
 #          stored_fields: 指定返回哪些字段
 #          组合查询bool: 包括must, should, must_not, filter
-# 5. elasticsearch ORM save data
+# 5. elasticsearch-dsl ORM save data
+# 6. 定义elasticsearch completion完成suggest
 
+
+# Django 与es交互，实现搜索界面 (LcvSearch)
+# 1. django实现搜索建议
+# 2. django实现搜索和分页
+# 3. django与redis实现热门词统计
+
+
+# Scrapd部署
+# 1. pip install scrapyd scrapyd-client， 服务器端scrapyd启动scrapyd server
+# 2. 修改scrapy.cfg设置
+# 3. 进入ArticleSpider，客户端 (https://scrapyd.readthedocs.io/en/stable/api.html#schedule-json)
+#    deploy: $ scrapyd-deploy dongnanzhy -p ArticleSpider
+#    start: $ curl http://localhost:6800/schedule.json -d project=myproject -d spider=somespider
 
 
 # 添加main函数方便pycharm调试
@@ -92,6 +106,6 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.abspath((__file__))))
-execute(["scrapy", "crawl", "jobbole"])
+# execute(["scrapy", "crawl", "jobbole"])
 # execute(["scrapy", "crawl", "zhihu"])
-# execute(["scrapy", "crawl", "lagou"])
+execute(["scrapy", "crawl", "lagou"])
